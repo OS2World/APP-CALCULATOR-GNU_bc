@@ -1,0 +1,282 @@
+diff -cbr orig/bc.1 new/bc.1
+*** orig/bc.1	Wed Mar 04 10:21:46 1992
+--- new/bc.1	Mon Mar 16 18:00:16 1992
+***************
+*** 592,598 ****
+  extensions, where a feature is extended to add more functionality and
+  additions, where new features are added.
+  The following is the list of differences and extensions.
+! .IP LANG environment
+  This version does not conform to the POSIX standard in the processing
+  of the LANG environment variable and all environment variables starting
+  with LC_.
+--- 592,598 ----
+  extensions, where a feature is extended to add more functionality and
+  additions, where new features are added.
+  The following is the list of differences and extensions.
+! .IP "LANG environment"
+  This version does not conform to the POSIX standard in the processing
+  of the LANG environment variable and all environment variables starting
+  with LC_.
+diff -cbr orig/execute.c new/execute.c
+*** orig/execute.c	Wed Mar 04 10:21:48 1992
+--- new/execute.c	Mon Mar 16 18:00:18 1992
+***************
+*** 773,779 ****
+  
+  void
+  assign (c_code)
+!      char c_code;
+  {
+    free_num (&ex_stack->s_num);
+    if (c_code)
+--- 773,779 ----
+  
+  void
+  assign (c_code)
+!      int c_code;
+  {
+    free_num (&ex_stack->s_num);
+    if (c_code)
+diff -cbr orig/global.c new/global.c
+*** orig/global.c	Wed Mar 04 10:21:50 1992
+--- new/global.c	Mon Mar 16 18:00:18 1992
+***************
+*** 37,42 ****
+--- 37,46 ----
+  
+  #ifndef BC_MATH_FILE
+  CONST char libmath[] =
++ #ifdef OS2
++ #include "os2/math.h"
++ #else
+  #include "math.h"
++ #endif
+  ;
+  #endif
+diff -cbr orig/load.c new/load.c
+*** orig/load.c	Wed Mar 04 10:21:50 1992
+--- new/load.c	Mon Mar 16 18:00:20 1992
+***************
+*** 50,56 ****
+  /* addbyte adds one BYTE to the current code segment. */
+  void
+  addbyte (byte)
+!      char byte;
+  {
+    int seg, offset, func;
+  
+--- 50,56 ----
+  /* addbyte adds one BYTE to the current code segment. */
+  void
+  addbyte (byte)
+!      int byte;
+  {
+    int seg, offset, func;
+  
+***************
+*** 223,229 ****
+  	      case 'F':  /* A function, get the name and initialize it. */
+  		str++;
+  		func = long_val (&str);
+! 		clear_func (func);
+  #if DEBUG > 2
+  		printf ("Loading function number %d\n", func);
+  #endif
+--- 223,229 ----
+  	      case 'F':  /* A function, get the name and initialize it. */
+  		str++;
+  		func = long_val (&str);
+! 		clear_func ((int) func);
+  #if DEBUG > 2
+  		printf ("Loading function number %d\n", func);
+  #endif
+***************
+*** 240,246 ****
+  		    printf ("parameter number %d\n", ap_name);
+  #endif
+  		    functions[(int)func].f_params =
+! 		      nextarg (functions[(int)func].f_params, ap_name);
+  		  }
+  
+  		/* get the auto vars */
+--- 240,246 ----
+  		    printf ("parameter number %d\n", ap_name);
+  #endif
+  		    functions[(int)func].f_params =
+! 		      nextarg (functions[(int)func].f_params, (int) ap_name);
+  		  }
+  
+  		/* get the auto vars */
+***************
+*** 252,258 ****
+  		    printf ("auto number %d\n", ap_name);
+  #endif
+  		    functions[(int)func].f_autos =
+! 		      nextarg (functions[(int)func].f_autos, ap_name);
+  		  }
+  		save_adr = load_adr;
+  		load_adr.pc_func = func;
+--- 252,258 ----
+  		    printf ("auto number %d\n", ap_name);
+  #endif
+  		    functions[(int)func].f_autos =
+! 		      nextarg (functions[(int)func].f_autos, (int) ap_name);
+  		  }
+  		save_adr = load_adr;
+  		load_adr.pc_func = func;
+***************
+*** 271,278 ****
+  		  addbyte ( (char) func);
+  		else
+  		  {
+! 		    addbyte ((func >> 8) & 0xff | 0x80);
+! 		    addbyte (func & 0xff);
+  		  }
+  		if (*str == ',') str++;
+  		while (*str != ':')
+--- 271,278 ----
+  		  addbyte ( (char) func);
+  		else
+  		  {
+! 		    addbyte ((int) ((func >> 8) & 0xff | 0x80));
+! 		    addbyte ((int) (func & 0xff));
+  		  }
+  		if (*str == ',') str++;
+  		while (*str != ':')
+***************
+*** 301,311 ****
+  		addbyte (*str++);
+  		vaf_name = long_val (&str);
+  		if (vaf_name < 128)
+! 		  addbyte (vaf_name);
+  		else
+  		  {
+! 		    addbyte ((vaf_name >> 8) & 0xff | 0x80);
+! 		    addbyte (vaf_name & 0xff);
+  		  }
+  		break;
+  
+--- 301,311 ----
+  		addbyte (*str++);
+  		vaf_name = long_val (&str);
+  		if (vaf_name < 128)
+! 		  addbyte ((int) vaf_name);
+  		else
+  		  {
+! 		    addbyte ((int) ((vaf_name >> 8) & 0xff | 0x80));
+! 		    addbyte ((int) (vaf_name & 0xff));
+  		  }
+  		break;
+  
+diff -cbr orig/proto.h new/proto.h
+*** orig/proto.h	Wed Mar 04 10:21:52 1992
+--- new/proto.h	Mon Mar 16 18:00:20 1992
+***************
+*** 70,76 ****
+  /* From util.c */
+  _PROTOTYPE(char *strcopyof, (char *str));
+  _PROTOTYPE(arg_list *nextarg, (arg_list *args, int val));
+! _PROTOTYPE(char *arg_str, (arg_list *args, int));
+  _PROTOTYPE(void free_args, (arg_list *args));
+  _PROTOTYPE(void check_params, (arg_list *params, arg_list *autos));
+  _PROTOTYPE(void init_gen, (void));
+--- 70,76 ----
+  /* From util.c */
+  _PROTOTYPE(char *strcopyof, (char *str));
+  _PROTOTYPE(arg_list *nextarg, (arg_list *args, int val));
+! _PROTOTYPE(char *arg_str, (arg_list *args, int commas));
+  _PROTOTYPE(void free_args, (arg_list *args));
+  _PROTOTYPE(void check_params, (arg_list *params, arg_list *autos));
+  _PROTOTYPE(void init_gen, (void));
+diff -cbr orig/scan.l new/scan.l
+*** orig/scan.l	Wed Mar 04 10:21:54 1992
+--- new/scan.l	Mon Mar 16 18:00:22 1992
+***************
+*** 28,34 ****
+--- 28,38 ----
+  *************************************************************************/
+  
+  #include "bcdefs.h"
++ #ifdef OS2
++ #include "bc.h"
++ #else
+  #include "y.tab.h"
++ #endif
+  #include "global.h"
+  #include "proto.h"
+  
+diff -cbr orig/storage.c new/storage.c
+*** orig/storage.c	Wed Mar 04 10:21:54 1992
+--- new/storage.c	Mon Mar 16 18:00:24 1992
+***************
+*** 184,190 ****
+  
+  void
+  clear_func (func)
+!      char func;
+  {
+    bc_function *f;
+    int indx;
+--- 184,190 ----
+  
+  void
+  clear_func (func)
+!      int func;
+  {
+    bc_function *f;
+    int indx;
+***************
+*** 687,693 ****
+  
+  void
+  decr_array (var_name)
+!      char var_name;
+  {
+    bc_num *num_ptr;
+    long   index;
+--- 687,693 ----
+  
+  void
+  decr_array (var_name)
+!      int var_name;
+  {
+    bc_num *num_ptr;
+    long   index;
+diff -cbr orig/util.c new/util.c
+*** orig/util.c	Wed Mar 04 10:21:54 1992
+--- new/util.c	Mon Mar 16 18:00:24 1992
+***************
+*** 56,62 ****
+  arg_list *
+  nextarg (args, val)
+       arg_list *args;
+!      char val;
+  { arg_list *temp;
+  
+    temp = (arg_list *) bc_malloc (sizeof (arg_list));
+--- 56,62 ----
+  arg_list *
+  nextarg (args, val)
+       arg_list *args;
+!      int val;
+  { arg_list *temp;
+  
+    temp = (arg_list *) bc_malloc (sizeof (arg_list));
+***************
+*** 278,284 ****
+  
+  void
+  out_char (ch)
+!      char ch;
+  {
+    if (ch == '\n')
+      {
+--- 278,284 ----
+  
+  void
+  out_char (ch)
+!      int ch;
+  {
+    if (ch == '\n')
+      {
